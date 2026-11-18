@@ -1,4 +1,4 @@
-How it works
+How it works (only used on Unraid that has Tautulli and Plex with Plex Pass)
 
 Every 15 seconds it calls get_activity. For each limited user it adds time to a local SQLite ledger while they’re playing or buffering. Paused time doesn’t count, and two simultaneous streams count once.
 Each poll it also checks that user’s Tautulli history for today, so a restart or downtime can’t lose watch time. One side effect: after two overlapping streams end, the history total counts both, so time can jump ahead of the ledger.
@@ -19,4 +19,4 @@ Enforcement lives entirely in this script, so if it or Tautulli is down, nothing
 It only covers streaming. Downloads or sync, or a kid switching to an unlimited profile on the same device, aren’t covered.
 If you want a harder lock, the next step would be removing the user’s library access through the Plex API once the limit is hit. I left that out because it’s more invasive.
 
-I’d also check that --list-users shows your managed users the way you expect, since I couldn’t confirm how Tautulli labels them on your setup. Run --usage any time to see today’s tracked minutes.
+Check that --list-users shows your managed users the way you expect, Tautulli labels them on your setup. Run --usage any time to see today’s tracked minutes or look at Unraid's container log.
