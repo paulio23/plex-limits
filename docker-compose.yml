@@ -1,0 +1,9 @@
+services:
+  plex-limits:
+    build: .
+    restart: unless-stopped
+    environment:
+      - TZ=America/New_York
+    volumes:
+      - ./config:/config   # put config.yml here (mount the folder so edits hot-reload)
+      - ./data:/data       # usage ledger; set db_path: /data/usage.db

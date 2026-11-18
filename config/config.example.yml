@@ -1,0 +1,19 @@
+tautulli:
+  url: http://192.168.1.10:8181      # Tautulli base URL (include HTTP root if you set one)
+  apikey: YOUR_TAUTULLI_API_KEY      # Tautulli > Settings > Web Interface > API key
+
+poll_seconds: 15                     # how often to check activity (also the counting precision)
+timezone: America/New_York           # when the daily counter resets (midnight in this zone)
+status_interval_seconds: 300         # log a usage summary for every limited user this often (0 = off)
+db_path: usage.db                    # use /data/usage.db in Docker
+
+# Only users listed here are limited. Key = Tautulli user_id, username, or friendly name.
+# Run `python screentime.py --list-users` to see them.
+users:
+  kid1:
+    daily_minutes: 90                # weekdays (and weekends unless weekend_minutes is set)
+    weekend_minutes: 150             # Sat/Sun, optional
+    allowed_hours: "06:00-22:00"     # optional curfew window
+    message: "That's your 90 minutes for today!"   # optional, shown on the player
+  kid2:
+    daily_minutes: 60
