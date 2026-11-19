@@ -230,7 +230,14 @@ def run(args):
     ledger = Ledger(cfg.get("db_path", "usage.db"))
     limiter = Limiter(tautulli, ledger, dry_run=args.dry_run)
     last = time.monotonic()
+    users_logged = False
     while True:
+        if not users_logged:  # retried each poll until Tautulli answers
+            try:
+                log_users(tautulli, cfg)
+                users_logged = True
+            except Exception as e:
+                log.warning("could not list Tautulli users yet: %s", e)
         poll = cfg.get("poll_seconds", 15)
         tz = ZoneInfo(cfg.get("timezone") or os.environ.get("TZ") or "UTC")
         elapsed = time.monotonic() - last
@@ -248,19 +255,45 @@ def run(args):
                 log.error("config reload failed, keeping old config: %s", e)
 
 
+def user_table(users, cfg=None):
+    """Format Tautulli users as table lines; mark the ones that have a limit."""
+    def col(u, key):
+        v = u.get(key)
+        return "" if v is None else str(v)
+
+    lines = [f"{'user_id':<12}{'username':<24}{'home':<6}{'restricted':<11}{'admin':<6}{'limit'}"]
+    matched = set()
+    for u in users:
+        mark = ""
+        if cfg is not None:
+            for key in (col(u, "user_id"), col(u, "username"), col(u, "friendly_name")):
+                if key and key.lower() in cfg["_users"]:
+                    matched.add(key.lower())
+                    mark = "<- limited"
+        lines.append(
+            f"{col(u, 'user_id'):<12}{col(u, 'username'):<24}{col(u, 'is_home_user'):<6}"
+            f"{col(u, 'is_restricted'):<11}{col(u, 'is_admin'):<6}{mark}"
+        )
+    return lines, matched
+
+
+def log_users(tautulli, cfg):
+    """Log every Tautulli user once at startup and flag unmatched config entries."""
+    users = tautulli.call("get_users")
+    lines, matched = user_table(users, cfg)
+    log.info("Found %d Tautulli user(s):", len(users))
+    for line in lines:
+        log.info("  %s", line)
+    for key in cfg["_users"]:
+        if key not in matched:
+            log.warning("config user %r matches no Tautulli user id or username", key)
+
+
 def list_users(args):
     cfg = load_config(args.config)
     t = Tautulli(cfg["tautulli"]["url"], cfg["tautulli"]["apikey"])
-    print(f"{'user_id':<12}{'username':<24}{'home':<6}{'restricted':<11}{'admin'}")
-    for u in t.call("get_users"):
-        def col(key):
-            v = u.get(key)
-            return "" if v is None else str(v)
-
-        print(
-            f"{col('user_id'):<12}{col('username'):<24}{col('is_home_user'):<6}"
-            f"{col('is_restricted'):<11}{col('is_admin')}"
-        )
+    lines, _ = user_table(t.call("get_users"), cfg)
+    print("\n".join(lines))
 
 
 def show_usage(args):
@@ -288,4 +321,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-
